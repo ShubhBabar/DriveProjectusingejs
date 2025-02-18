@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Upload Popup</title>
+    <style>
+      /* General body styling */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f4f4f4;
+        position: relative; /* Added for logout button positioning */
+      }
+
+      /* Welcome message styling */
+      .welcome-message {
+        text-align: center;
+        position: absolute;
+        top: 40%; /* Position above the middle */
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        color: #333;
+      }
+
+      /* Logout button styling */
+      #logoutButton {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+        background-color: #dc3545; /* Red color for logout */
+        color: white;
+        border-radius: 4px;
+      }
+
+      #logoutButton:hover {
+        background-color: #c82333; /* Darker red on hover */
+      }
+
+      /* Button to open the popup */
+      #openPopupButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 4px;
+      }
+
+      #openPopupButton:hover {
+        background-color: #0056b3;
+      }
+
+      /* Overlay styling */
+      #overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+      }
+
+      /* Popup styling */
+      #popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        width: 400px;
+        text-align: center;
+      }
+
+      /* Popup heading */
+      #popup h2 {
+        margin-top: 0;
+        font-size: 24px;
+        color: #333;
+        margin-bottom: 20px;
+      }
+
+      /* File input styling */
+      #fileInput {
+        margin-bottom: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      /* Submit button styling */
+      #submitButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+        background-color: #28a745;
+        color: white;
+        border-radius: 4px;
+        display: none;
+        width: 100%;
+      }
+
+      #submitButton:hover {
+        background-color: #218838;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="welcome-message">
+      Welcome, <strong><%= user.username %></strong>!
+    </div>
+    <!-- Logout Button -->
+    <button id="logoutButton">Logout</button>
+
+    <main>
+      <!-- Button to open the popup -->
+      <button id="openPopupButton">Upload File</button>
+
+      <!-- Overlay -->
+      <div id="overlay"></div>
+
+      <!-- Popup -->
+      <div id="popup">
+        <h2>Upload File</h2>
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+          <input type="file" id="fileInput" name="file" required>
+          <button type="submit" id="submitButton">Upload File</button>
+      </form>
+      </div>
+    </main>
+
+    <script>
+      // Function to open the popup
+      function openPopup() {
+        document.getElementById("popup").style.display = "block";
+        document.getElementById("overlay").style.display = "block";
+      }
+
+      // Function to close the popup
+      function closePopup() {
+        document.getElementById("popup").style.display = "none";
+        document.getElementById("overlay").style.display = "none";
+        document.getElementById("submitButton").style.display = "none"; // Hide submit button
+        document.getElementById("fileInput").value = ""; // Clear file input
+      }
+
+      // Handle file input change
+      document
+        .getElementById("fileInput")
+        .addEventListener("change", function (event) {
+          const file = event.target.files[0];
+          if (file) {
+            // Show the submit button when a file is selected
+            document.getElementById("submitButton").style.display = "block";
+          } else {
+            // Hide the submit button if no file is selected
+            document.getElementById("submitButton").style.display = "none";
+          }
+        });
+
+      // Function to handle form submission
+      document.getElementById("uploadForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select a file to upload.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(`File Upload Successfully!`);
+                    fileInput.value = "";
+                    document.getElementById("submitButton").style.display = "none";
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                console.error("Error uploading file:", error);
+                alert("File upload failed!");
+            }
+        });
+      // Close popup when clicking outside the box
+      document.getElementById("overlay").addEventListener("click", closePopup);
+
+      // Open popup when clicking the button
+      document
+        .getElementById("openPopupButton")
+        .addEventListener("click", openPopup);
+
+      // Logout functionality
+      document
+        .getElementById("logoutButton")
+        .addEventListener("click", function () {
+          // Send a request to the server to log out
+          fetch("/user/logout", {
+            method: "GET",
+            credentials: "include", // Include cookies in the request
+          })
+            .then((response) => {
+              if (response.ok) {
+                // Redirect to the login page after logout
+                window.location.href = "/user/login";
+              } else {
+                // Handle non-OK responses (e.g., 500 errors)
+                response.json().then((data) => {
+                  alert(data.message || "Logout failed. Please try again.");
+                });
+              }
+            })
+            .catch((error) => {
+              console.error("Error during logout:", error);
+              alert(
+                "Logout failed. Please check your connection and try again."
+              );
+            });
+        });
+    </script>
+  </body>
+</html>
